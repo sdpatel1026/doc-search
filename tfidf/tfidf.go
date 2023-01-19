@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"math"
+	"strings"
 
 	"github.com/sdpatel1026/doc-search/configs"
 	"github.com/sdpatel1026/doc-search/tfidf/tokenize"
@@ -54,15 +55,15 @@ func (tfIDF *TFIDF) AddStopWords(words ...string) {
 
 // TrainDocs train documents
 func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
-	results := make([]map[string]interface{}, len(docs))
+	results := make([]map[string]interface{}, 0)
 	for docName, content := range docs {
-		h := hash(content)
-		docPos := tfIDF.docHashPos(h)
-		if docPos >= 0 {
+		docHash := hash(content)
+		docPos := tfIDF.docHashPos(docHash)
+		if docPos >= 1 {
 			result := make(map[string]interface{})
 			result[configs.KEY_DOC_ID] = docPos
 			result[configs.KEY_DOC_NAME] = docName
-			result[configs.KEY_MSG] = configs.DOC_TRAINED
+			result[configs.KEY_MSG] = configs.DOC_ALEREADY_TRAINED
 			results = append(results, result)
 			continue
 		}
@@ -78,19 +79,18 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 			results = append(results, result)
 			continue
 		}
-		tfIDF.termFreqs = append(tfIDF.termFreqs, termFreq)
-		tfIDF.docIndex[h] = tfIDF.n
-		tfIDF.indexDocName[tfIDF.n] = docName
-		docID := tfIDF.n
 		tfIDF.n++
+		tfIDF.termFreqs = append(tfIDF.termFreqs, termFreq)
+		tfIDF.docIndex[docHash] = tfIDF.n
+		tfIDF.indexDocName[tfIDF.n] = docName
 		for term := range termFreq {
 			tfIDF.termDocs[term]++
-			tfIDF.UpdateWeights(term)
+			tfIDF.updateWeights(term)
 		}
-		weight := tfIDF.weight(docID)
+		weight := tfIDF.weight(tfIDF.n - 1)
 		tfIDF.weights = append(tfIDF.weights, weight)
 		result := make(map[string]interface{})
-		result[configs.KEY_DOC_ID] = docID
+		result[configs.KEY_DOC_ID] = tfIDF.n
 		result[configs.KEY_DOC_NAME] = docName
 		result[configs.KEY_MSG] = configs.DOC_TRAINED
 		results = append(results, result)
@@ -99,13 +99,17 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 }
 
 // UpdateWieghts update weight of all docs present in corpus.
-func (tfIDF *TFIDF) UpdateWeights(term string) {
+func (tfIDF *TFIDF) updateWeights(term string) {
 	for pos, weight := range tfIDF.weights {
 		_, isTermPresent := weight[term]
 		if isTermPresent {
 			weight[term] = findTfIdf(tfIDF.termFreqs[pos][term], 1, tfIDF.termDocs[term], tfIDF.n)
+			tfIDF.weights[pos] = weight
 		}
 	}
+}
+func (tfIDF *TFIDF) DocName(docPos int) string {
+	return tfIDF.indexDocName[docPos]
 }
 
 // weight calculate weight of doc.
@@ -126,12 +130,12 @@ func (tfIDF *TFIDF) Cal(doc string) (weight map[string]float64) {
 	weight = make(map[string]float64)
 
 	var termFreq map[string]int
-
+	doc = strings.ToLower(doc)
 	docPos := tfIDF.docPos(doc)
 	if docPos < 0 {
 		termFreq = tfIDF.termFreq(doc)
 	} else {
-		termFreq = tfIDF.termFreqs[docPos]
+		termFreq = tfIDF.termFreqs[docPos-1]
 	}
 	// docTerms := 0
 	// for _, freq := range termFreq {

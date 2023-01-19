@@ -3,6 +3,7 @@ package controllers
 import (
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -25,10 +26,11 @@ func Train(gContext *gin.Context) {
 		processError(gContext, configs.FILE_MISSING_ERROR, requestID, http.StatusBadRequest)
 		return
 	}
-	responses := make([]map[string]interface{}, len(files))
+	responses := make([]map[string]interface{}, 0)
 	fileNameContent := make(map[string][]byte)
 	for _, file := range files {
 		fileContent, err := readFile(file)
+		fileContent = []byte(strings.ToLower(string(fileContent)))
 		if err != nil {
 			log.Printf("error in reading file for a req_id %s is: %s\n", requestID, err.Error())
 			response := make(map[string]interface{})
@@ -42,5 +44,5 @@ func Train(gContext *gin.Context) {
 	tfIDF := tfidf.New()
 	results := tfIDF.TrainDocs(fileNameContent)
 	responses = append(responses, results...)
-	gContext.JSON(http.StatusOK, gin.H{configs.KEY_RESULT: responses})
+	gContext.JSON(http.StatusOK, gin.H{configs.KEY_RESULT: responses, configs.KEY_REQ_ID: requestID})
 }

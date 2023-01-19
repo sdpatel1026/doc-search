@@ -5,7 +5,7 @@ func (tfIDF *TFIDF) Ranks(queryWeight map[string]float64) (docsRank map[int]floa
 	docsRank = make(map[int]float64)
 	for pos, weight := range tfIDF.weights {
 		rank := Cosine(queryWeight, weight)
-		docsRank[pos] = rank
+		docsRank[pos+1] = rank
 	}
 	return
 }

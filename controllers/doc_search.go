@@ -25,24 +25,25 @@ func DocSearch(gContext *gin.Context) {
 	tfIDF := tfidf.New()
 	textWeight := tfIDF.Cal(text)
 	docsRank := tfIDF.Ranks(textWeight)
-	docIDs := make([]int, len(docsRank))
+	docIDs := make([]int, 0)
 	for docID := range docsRank {
 		docIDs = append(docIDs, docID)
 	}
 	sort.SliceStable(docIDs, func(i, j int) bool {
 		return docsRank[docIDs[i]] > docsRank[docIDs[j]]
 	})
-	response := make([]map[string]interface{}, configs.OUTPUT_LEN)
+	response := make([]map[string]interface{}, 0)
 	var count = 0
 	for _, docID := range docIDs {
 		result := make(map[string]interface{})
 		result[configs.KEY_DOC_ID] = docID
 		result[configs.KEY_RANK] = docsRank[docID]
+		result[configs.KEY_DOC_NAME] = tfIDF.DocName(docID)
 		response = append(response, result)
 		count++
 		if count == configs.OUTPUT_LEN {
 			break
 		}
 	}
-	gContext.JSON(http.StatusOK, gin.H{configs.KEY_RESULT: response})
+	gContext.JSON(http.StatusOK, gin.H{configs.KEY_RESULT: response, configs.KEY_REQ_ID: requestID})
 }

@@ -9,6 +9,7 @@ const (
 	READING_ERROR         = "error in reading the document."
 	TEXT_MISSING_ERROR    = "text required."
 	DOC_TRAINED           = "document successfully trained."
+	DOC_ALEREADY_TRAINED  = "document is already trained."
 	TRAINING_NOT_REQUIRED = "This document does not needs to be trained, as it does not contains any useful information."
 	KEY_ERROR             = "error"
 	KEY_MSG               = "result"

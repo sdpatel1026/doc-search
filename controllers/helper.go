@@ -9,7 +9,7 @@ import (
 )
 
 func processError(gContext *gin.Context, errMsg interface{}, requestID string, httpStatusCode int) {
-	var response Response = make(Response)
+	response := make(map[string]interface{})
 	response[configs.KEY_ERROR] = errMsg
 	response[configs.KEY_REQ_ID] = requestID
 	gContext.AbortWithStatusJSON(httpStatusCode, response)
