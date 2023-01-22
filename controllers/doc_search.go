@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	"sort"
@@ -37,7 +38,7 @@ func DocSearch(gContext *gin.Context) {
 	for _, docID := range docIDs {
 		result := make(map[string]interface{})
 		result[configs.KEY_DOC_ID] = docID
-		result[configs.KEY_RANK] = docsRank[docID]
+		result[configs.KEY_RANK] = fmt.Sprintf("%f", docsRank[docID])
 		result[configs.KEY_DOC_NAME] = tfIDF.DocName(docID)
 		response = append(response, result)
 		count++
