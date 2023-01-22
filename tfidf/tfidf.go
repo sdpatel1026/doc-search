@@ -4,24 +4,32 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"math"
+	"math/big"
 	"strings"
 
 	"github.com/sdpatel1026/doc-search/configs"
 	"github.com/sdpatel1026/doc-search/tfidf/tokenize"
 )
 
+const (
+	K float64 = 1.2
+	B float64 = 0.75
+)
+
 var tfIdf *TFIDF
 
 // TFIDF tfidf model
 type TFIDF struct {
-	docIndex     map[string]int   // train document index in TermFreqs
-	indexDocName map[int]string   // train document name mapped with index in TermFreqs
-	termFreqs    []map[string]int // terms frequency for each train document
-	// weights      []map[string]float64   //tf-idf of weight for each train document
-	termDocs  map[string]int         // number of documents for each term in train data
-	n         int                    // number of documents in train data
-	stopWords map[string]interface{} // words to be remove.
-	tokenizer tokenize.Tokenizer
+	docIndex      map[string]int          // train document index
+	indexDocName  map[int]string          // train document name mapped with index
+	termFreqs     []map[string]*big.Int   // terms frequency for each train document
+	termDocsCount map[string]int          // number of document in which term t appears in train data
+	termDocs      map[string]map[int]bool //list of doc in which term t present.
+	docsTermLen   []*big.Int              //len of each doc in words.
+	termsLen      *big.Int                //total terms in corpus
+	n             int                     // number of documents in train data
+	stopWords     map[string]interface{}  // words to be remove.
+	tokenizer     tokenize.Tokenizer
 }
 
 // New new model with default
@@ -31,13 +39,15 @@ func New() *TFIDF {
 		return tfIdf
 	}
 	tfIdf = &TFIDF{
-		docIndex:     make(map[string]int),
-		indexDocName: make(map[int]string),
-		termFreqs:    make([]map[string]int, 0),
-		// weights:      make([]map[string]float64, 0),
-		termDocs:  make(map[string]int),
-		n:         0,
-		tokenizer: &tokenize.EnTokenizer{},
+		docIndex:      make(map[string]int),
+		indexDocName:  make(map[int]string),
+		termFreqs:     make([]map[string]*big.Int, 0),
+		termDocs:      make(map[string]map[int]bool),
+		termDocsCount: make(map[string]int),
+		docsTermLen:   make([]*big.Int, 0),
+		termsLen:      big.NewInt(0),
+		n:             0,
+		tokenizer:     &tokenize.EnTokenizer{},
 	}
 	return tfIdf
 }
@@ -67,9 +77,9 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 			results = append(results, result)
 			continue
 		}
-
-		termFreq := tfIDF.termFreq(string(content))
-
+		tokens := tfIDF.tokenizer.Tokens(string(content))
+		tfIDF.n += 1
+		termFreq := tfIDF.termFreq(tokens)
 		//not required to train doc as it does not contain useful information.
 		if len(termFreq) == 0 {
 			result := make(map[string]interface{})
@@ -79,16 +89,22 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 			results = append(results, result)
 			continue
 		}
-		tfIDF.n += 1
+		for term := range termFreq {
+			termDocSet, isFound := tfIDF.termDocs[term]
+			if !isFound {
+				termDocSet = make(map[int]bool)
+				tfIDF.termDocs[term] = termDocSet
+			}
+			termDocSet[tfIDF.n] = true
+			tfIDF.termDocsCount[term] += 1
+		}
 		tfIDF.termFreqs = append(tfIDF.termFreqs, termFreq)
+		docTokenCount := big.NewInt(int64(len(tokens)))
+		tfIDF.docsTermLen = append(tfIDF.docsTermLen, docTokenCount)
+		tfIDF.termsLen = tfIDF.termsLen.Add(tfIDF.termsLen, docTokenCount)
 		tfIDF.docIndex[docHash] = tfIDF.n
 		tfIDF.indexDocName[tfIDF.n] = docName
-		for term := range termFreq {
-			tfIDF.termDocs[term] += 1
-			// tfIDF.updateWeights(term)
-		}
-		// weight := tfIDF.weight(tfIDF.n)
-		// tfIDF.weights = append(tfIDF.weights, weight)
+
 		result := make(map[string]interface{})
 		result[configs.KEY_DOC_ID] = tfIDF.n
 		result[configs.KEY_DOC_NAME] = docName
@@ -131,7 +147,7 @@ func (tfIDF *TFIDF) weight(docPos int) map[string]float64 {
 		// fmt.Printf("freq: %v\n", freq)
 		// fmt.Printf("tfIDF.termDocs[term]: %v\n", tfIDF.termDocs[term])
 		// fmt.Printf("tfIDF.n: %v\n", tfIDF.n)
-		weight[term] = findTfIdf(freq, 1, tfIDF.termDocs[term], tfIDF.n)
+		weight[term] = findTfIdf(freq, 1, tfIDF.termDocsCount[term], tfIDF.n)
 		// weight[term] = findTfIdf(freq, docTerms, f.termDocs[term], f.n)
 	}
 	// fmt.Printf("termFreq: %v\n", termFreq)
@@ -156,7 +172,7 @@ func (tfIDF *TFIDF) Cal(doc string) (weight map[string]float64) {
 	// 	docTerms += freq
 	// }
 	for term, freq := range termFreq {
-		weight[term] = findTfIdf(freq, 1, tfIDF.termDocs[term], tfIDF.n)
+		weight[term] = findTfIdf(freq, 1, tfIDF.termDocsCount[term], tfIDF.n)
 		// weight[term] = findTfIdf(freq, docTerms, f.termDocs[term], f.n)
 	}
 
@@ -164,22 +180,20 @@ func (tfIDF *TFIDF) Cal(doc string) (weight map[string]float64) {
 }
 
 // termFreq calculate term-freq of each term in document.
-func (tfIDF *TFIDF) termFreq(doc string) (m map[string]int) {
-	m = make(map[string]int)
-
-	tokens := tfIDF.tokenizer.Tokens(doc)
-	if len(tokens) == 0 {
-		return
-	}
-
+func (tfIDF *TFIDF) termFreq(tokens []string) (m map[string]*big.Int) {
+	m = make(map[string]*big.Int)
 	for _, term := range tokens {
 		if _, ok := tfIDF.stopWords[term]; ok {
 			continue
 		}
-
-		m[term]++
+		freq, isFound := m[term]
+		if !isFound {
+			freq = big.NewInt(1)
+			m[term] = freq
+		} else {
+			m[term] = freq.Add(freq, big.NewInt(1))
+		}
 	}
-
 	return
 }
 
@@ -210,4 +224,30 @@ func findTfIdf(termFreq, docTerms, termDocs, N int) float64 {
 	idf := math.Log(float64(1+N) / (float64(1 + termDocs)))
 	// idf := (float64(1+N) / float64(1+termDocs))
 	return tf * idf
+}
+
+func (tfIDF *TFIDF) BM25(docPos int, term string) *big.Float {
+	termFreq := tfIDF.termFreqs[docPos-1][term]
+	termDocCount := tfIDF.termDocsCount[term]
+	docLen := tfIDF.docsTermLen[docPos-1]
+	docsLen := tfIDF.termsLen
+	IDF := math.Log(1 + ((float64(tfIDF.n) - float64(termDocCount) + 0.5) / (float64(termDocCount) + 0.5)))
+
+	// avgDocsLen := docsLen.Q(docsLen, big.NewInt(int64(tfIDF.n)))
+	f := new(big.Float)
+	fTermFreq := new(big.Float)
+	fTermFreq = fTermFreq.SetInt(termFreq)
+	fNumerator := f.Mul(big.NewFloat(K+1), fTermFreq)
+	fDocLen := big.Float{}
+	fDocsLen := big.Float{}
+	avgDocsLen := f.Quo(fDocLen.SetInt(docLen), fDocsLen.SetInt(docsLen))
+
+	f1bb := f.Add(big.NewFloat(1-B), f.Mul(big.NewFloat(B), avgDocsLen))
+	fk1bb := f.Mul(big.NewFloat(K), f1bb)
+
+	fDeno := f.Add(fTermFreq, fk1bb)
+
+	fBM25 := f.Mul(big.NewFloat(IDF), f.Quo(fNumerator, fDeno))
+	return fBM25
+
 }

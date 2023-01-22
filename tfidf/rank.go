@@ -10,7 +10,7 @@ package tfidf
 // 	return
 // }
 
-//Ranks finds a rank of all docs in corpus w.r.t queryWeight.
+//Ranks finds a rank of all docs in corpus w.r.t queryWeight using TF-IDF and cosine similarities.
 func (tfIDF *TFIDF) Ranks(queryWeight map[string]float64) (docsRank map[int]float64) {
 	docsRank = make(map[int]float64)
 	var pos = 1
@@ -23,4 +23,18 @@ func (tfIDF *TFIDF) Ranks(queryWeight map[string]float64) (docsRank map[int]floa
 		pos++
 	}
 	return
+}
+
+func (tfIDF *TFIDF) RanksBM25(query string) (docsRank map[int]float64) {
+	tokens := tfIDF.tokenizer.Tokens(query)
+	docsRank = make(map[int]float64)
+	for _, token := range tokens {
+		docList, isFound := tfIDF.termDocs[token]
+		if isFound {
+			for docPos, _ := range docList {
+
+			}
+
+		}
+	}
 }
