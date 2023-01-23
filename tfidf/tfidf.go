@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"math"
 
+	"github.com/dchest/stemmer/porter2"
 	"github.com/sdpatel1026/doc-search/configs"
 	"github.com/sdpatel1026/doc-search/tfidf/tokenize"
 )
@@ -47,6 +48,8 @@ func New() *TFIDF {
 		n:             0,
 		tokenizer:     &tokenize.EnTokenizer{},
 	}
+	stopwords := []string{`i`, `me`, `my`, `myself`, `we`, `our`, `ours`, `ourselves`, `you`, "you`re", "you`ve", "you`ll", "you`d", `your`, `yours`, `yourself`, `yourselves`, `he`, `him`, `his`, `himself`, `she`, "she`s", `her`, `hers`, `herself`, `it`, "it`s", `its`, `itself`, `they`, `them`, `their`, `theirs`, `themselves`, `what`, `which`, `who`, `whom`, `this`, `that`, "that`ll", `these`, `those`, `am`, `is`, `are`, `was`, `were`, `be`, `been`, `being`, `have`, `has`, `had`, `having`, `do`, `does`, `did`, `doing`, `a`, `an`, `the`, `and`, `but`, `if`, `or`, `because`, `as`, `until`, `while`, `of`, `at`, `by`, `for`, `with`, `about`, `against`, `between`, `into`, `through`, `during`, `before`, `after`, `above`, `below`, `to`, `from`, `up`, `down`, `in`, `out`, `on`, `off`, `over`, `under`, `again`, `further`, `then`, `once`, `here`, `there`, `when`, `where`, `why`, `how`, `all`, `any`, `both`, `each`, `few`, `more`, `most`, `other`, `some`, `such`, `no`, `nor`, `not`, `only`, `own`, `same`, `so`, `than`, `too`, `very`, `s`, `t`, `can`, `will`, `just`, `don`, "don`t", `should`, "should`ve", `now`, `d`, `ll`, `m`, `o`, `re`, `ve`, `y`, `ain`, `aren`, "aren`t", `couldn`, "couldn`t", `didn`, "didn`t", `doesn`, "doesn`t", `hadn`, "hadn`t", `hasn`, "hasn`t", `haven`, "haven`t", `isn`, "isn`t", `ma`, `mightn`, "mightn`t", `mustn`, "mustn`t", `needn`, "needn`t", `shan`, "shan`t", `shouldn`, "shouldn`t", `wasn`, "wasn`t", `weren`, "weren`t", `won`, "won`t", `wouldn`, "wouldn`t"}
+	tfIdf.AddStopWords(stopwords...)
 	return tfIdf
 }
 
@@ -88,19 +91,21 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 			continue
 		}
 		tfIDF.n += 1
-		for term := range termFreq {
+		var docTokenCount uint64 = 0
+		for term, freq := range termFreq {
 			termDocSet, isFound := tfIDF.termDocs[term]
 			if !isFound {
 				termDocSet = make(map[int64]bool)
-				tfIDF.termDocs[term] = termDocSet
+				// tfIDF.termDocs[term] = termDocSet
 			}
+			docTokenCount += freq
 			termDocSet[tfIDF.n] = true
+			tfIDF.termDocs[term] = termDocSet
 			tfIDF.termDocsCount[term] += 1
 		}
 		tfIDF.termFreqs = append(tfIDF.termFreqs, termFreq)
-		docTokenCount := len(tokens)
-		tfIDF.docsTermLen = append(tfIDF.docsTermLen, uint64(docTokenCount))
-		tfIDF.termsLen = tfIDF.termsLen + uint64(docTokenCount)
+		tfIDF.docsTermLen = append(tfIDF.docsTermLen, docTokenCount)
+		tfIDF.termsLen = tfIDF.termsLen + docTokenCount
 		tfIDF.docIndex[docHash] = tfIDF.n
 		tfIDF.indexDocName[tfIDF.n] = docName
 
@@ -187,6 +192,7 @@ func (tfIDF *TFIDF) termFreq(tokens []string) (m map[string]uint64) {
 		if _, ok := tfIDF.stopWords[term]; ok {
 			continue
 		}
+		term = porter2.Stemmer.Stem(term)
 		freq, isFound := m[term]
 		if !isFound {
 			freq = 1

@@ -3,6 +3,7 @@ module github.com/sdpatel1026/doc-search
 go 1.19
 
 require (
+	github.com/dchest/stemmer v0.0.0-20161207102402-66719a20c4b5 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/gin-gonic/gin v1.8.2 // indirect
