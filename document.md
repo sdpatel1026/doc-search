@@ -5,15 +5,17 @@
  </br>
 
  $$IDF = ln(1+{N-Df(Qi)+0.5 \over Df(Qi)+0.5})$$
-      Qi =          ith query term.
-      IDF(Qi)=      inverse document frequency of the ith query term.
-      f(Qi,D) =     how many times does the ith query term occur in  document D. 
-      K =           constant which helps determine term frequency saturation characteristics.
-      B =           constant that controls the effects of the length of the document compared to the average length.
-      fieldLen =    no. of terms in document.
-      avgFieldLen = average of fieldLen of documents in corpus.
-      N =           total documents in corpus  
-      Df(Qi) =      no. document in which ith query term appears.
+ 
+ 
+      Qi          = ith query term.
+      IDF(Qi)     = inverse document frequency of the ith query term.  
+      f(Qi,D)     = how many times does the ith query term occur in  document D.   
+      K           = constant which helps determine term frequency saturation characteristics.  
+      B           = constant that controls the effects of the length of the document compared to the average length.  
+      fieldLen    = no. of terms in document.  
+      avgFieldLen = average of fieldLen of documents in corpus.  
+      N           = total documents in corpus.    
+      Df(Qi)      = no. document in which ith query term appears.
 
 </br>
 </br>
@@ -26,7 +28,7 @@
    $$tf.idf = tf * log ({1+N\over1+Df})$$
 
       tf = frequency of term in document  
-      N = total documents in corpus  
+      N  = total documents in corpus  
       Df = no. document in which term appear
 
 
