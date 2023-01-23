@@ -30,7 +30,6 @@ func Train(gContext *gin.Context) {
 	fileNameContent := make(map[string][]byte)
 	for _, file := range files {
 		fileContent, err := readFile(file)
-		fileContent = []byte(strings.ToLower(string(fileContent)))
 		if err != nil {
 			log.Printf("error in reading file for a req_id %s is: %s\n", requestID, err.Error())
 			response := make(map[string]interface{})
@@ -39,6 +38,7 @@ func Train(gContext *gin.Context) {
 			responses = append(responses, response)
 			continue
 		}
+		fileContent = []byte(strings.ToLower(string(fileContent)))
 		fileNameContent[file.Filename] = fileContent
 	}
 	tfIDF := tfidf.New()

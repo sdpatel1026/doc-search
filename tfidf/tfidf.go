@@ -96,7 +96,6 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 			termDocSet, isFound := tfIDF.termDocs[term]
 			if !isFound {
 				termDocSet = make(map[int64]bool)
-				// tfIDF.termDocs[term] = termDocSet
 			}
 			docTokenCount += freq
 			termDocSet[tfIDF.n] = true
@@ -115,75 +114,13 @@ func (tfIDF *TFIDF) TrainDocs(docs map[string][]byte) []map[string]interface{} {
 		result[configs.KEY_MSG] = configs.DOC_TRAINED
 		results = append(results, result)
 	}
-	// var pos = 1
-	// for pos <= tfIDF.n {
-	// 	fmt.Println("---------------------------")
-	// 	fmt.Printf("\n%s", tfIdf.indexDocName[pos])
-	// 	fmt.Printf("\ntermFreqs --- %v\n", tfIDF.termFreqs[pos-1])
-	// 	pos++
-	// }
 	return results
 }
 
-// UpdateWieghts update weight of all docs present in corpus.
-//
-//	func (tfIDF *TFIDF) updateWeights(term string) {
-//		for pos, weight := range tfIDF.weights {
-//			_, isTermPresent := weight[term]
-//			if isTermPresent {
-//				weight[term] = findTfIdf(tfIDF.termFreqs[pos][term], 1, tfIDF.termDocs[term], tfIDF.n)
-//				tfIDF.weights[pos] = weight
-//			}
-//		}
-//	}
-//
 // DocName return document name
 func (tfIDF *TFIDF) DocName(docPos int64) string {
 	return tfIDF.indexDocName[docPos]
 }
-
-// weight calculate tf-idf weight of doc in the corpus.
-// func (tfIDF *TFIDF) weight(docPos int) map[string]float64 {
-
-// 	weight := make(map[string]float64)
-// 	termFreq := tfIDF.termFreqs[docPos-1]
-// 	// fmt.Println("***************************************")
-// 	for term, freq := range termFreq {
-// 		// fmt.Printf("term: %v\n", term)
-// 		// fmt.Printf("freq: %v\n", freq)
-// 		// fmt.Printf("tfIDF.termDocs[term]: %v\n", tfIDF.termDocs[term])
-// 		// fmt.Printf("tfIDF.n: %v\n", tfIDF.n)
-// 		weight[term] = findTfIdf(freq, 1, tfIDF.termDocsCount[term], tfIDF.n)
-// 		// weight[term] = findTfIdf(freq, docTerms, f.termDocs[term], f.n)
-// 	}
-// 	// fmt.Printf("termFreq: %v\n", termFreq)
-// 	return weight
-
-// }
-
-// Cal calculate tf-idf weight for specified document
-// func (tfIDF *TFIDF) Cal(doc string) (weight map[string]float64) {
-// 	weight = make(map[string]float64)
-
-// 	var termFreq map[string]int
-// 	doc = strings.ToLower(doc)
-// 	docPos := tfIDF.docPos(doc)
-// 	if docPos < 0 {
-// 		termFreq = tfIDF.termFreq(doc)
-// 	} else {
-// 		termFreq = tfIDF.termFreqs[docPos-1]
-// 	}
-// 	// docTerms := 0
-// 	// for _, freq := range termFreq {
-// 	// 	docTerms += freq
-// 	// }
-// 	for term, freq := range termFreq {
-// 		weight[term] = findTfIdf(freq, 1, tfIDF.termDocsCount[term], tfIDF.n)
-// 		// weight[term] = findTfIdf(freq, docTerms, f.termDocs[term], f.n)
-// 	}
-
-// 	return weight
-// }
 
 // termFreq calculate term-freq of each term in document.
 func (tfIDF *TFIDF) termFreq(tokens []string) (m map[string]uint64) {
