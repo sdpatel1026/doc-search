@@ -2,7 +2,7 @@ package configs
 
 const (
 	THRESHOLD_SIMILARITIES float64 = 0.40
-	OUTPUT_LEN             int     = 5 // no. of documents given in output
+	OUTPUT_LEN             int     = 10 // no. of documents given in output
 
 	TECHNICAL_ERROR       = "Something went wrong. Please try again later..."
 	FILE_MISSING_ERROR    = "docs required."

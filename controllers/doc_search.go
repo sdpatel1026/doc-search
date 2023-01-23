@@ -24,9 +24,8 @@ func DocSearch(gContext *gin.Context) {
 		return
 	}
 	tfIDF := tfidf.New()
-	textWeight := tfIDF.Cal(text)
-	docsRank := tfIDF.Ranks(textWeight)
-	docIDs := make([]int, 0)
+	docsRank := tfIDF.RanksBM25(text)
+	docIDs := make([]int64, 0)
 	for docID := range docsRank {
 		docIDs = append(docIDs, docID)
 	}
