@@ -1,3 +1,25 @@
+# BM-25
+## Formula
+ $$BM25 =  \sum IDF(Qi){{f(Qi,D)*(K+1)\over f(Qi,D)+K*(1-B+B*{fieldLen \over avgFieldLen})}}$$
+
+ </br>
+
+ $$IDF = ln(1+{N-Df(Qi)+0.5 \over Df(Qi)+0.5})$$
+      Qi =          ith query term.
+      IDF(Qi)=      inverse document frequency of the ith query term.
+      f(Qi,D) =     how many times does the ith query term occur in  document D. 
+      K =           constant which helps determine term frequency saturation characteristics.
+      B =           constant that controls the effects of the length of the document compared to the average length.
+      fieldLen =    no. of terms in document.
+      avgFieldLen = average of fieldLen of documents in corpus.
+      N =           total documents in corpus  
+      Df(Qi) =      no. document in which ith query term appears.
+
+</br>
+</br>
+</br>
+
+
 # TF-IDF
 
 ## Formula
@@ -23,3 +45,7 @@
 
       On the flip side, the tf-idf would not change at all if apple were to go from appearing just once in document B to making up literally 100% of the document’s words. That is, it doesn’t matter how many times the word apple appears in document B, because tf-idf ignores the intensive margin. It only matters whether it appears at all. However, if our goal is to get a measure that indicates relative importance, it is quite critical to distinguish between these scenarios. In the former, apple is relatively important to document A compared to B (only showing up once in B), while in the latter apple is not at all uniquely important for document A (at 10% of its words) relative to how important it is for document B (100% of its words). Yet tf-idf sees no difference.
    3. It doesn't take document in account: 
+
+
+
+
